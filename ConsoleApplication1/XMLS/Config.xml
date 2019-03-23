@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Config>
+
+  <Sistem>
+    
+  </Sistem>
+    <logTag1>  </logTag1>
+    <logTag2>  </logTag2>
+    <logTag3>  </logTag3>
+    <logTag4>  </logTag4>
+  
+  <Oracle>
+    <host>latx24.nam.nsroot.net</host>
+    <server_port>1521</server_port>
+    <service_name>SIT11G</service_name>
+    <user_name>PRISM9</user_name>
+    <password>PRISM9</password>
+  </Oracle>
+
+  <SQL>
+    <host>latx24.nam.nsroot.net</host>
+    <server_port>1433</server_port>
+    <database_name>SIT11G</database_name>
+    <user_name>PRISM9</user_name>
+    <password>PRISM9</password>
+    <network_library></network_library>
+  </SQL>
+  
+</Config>

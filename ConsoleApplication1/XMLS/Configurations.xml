@@ -1,0 +1,18 @@
+﻿<Config>
+  
+    <Tipos>
+      <Tipo>Entrada</Tipo>
+      <Tipo>Salida</Tipo>
+    </Tipos>
+
+    <Conceptos>
+      <Concepto>Sueldo</Concepto>
+      <Concepto>Prestamo</Concepto>
+      <Concepto>Movistar</Concepto>
+      <Concepto>VISA</Concepto>
+      <Concepto>MasterCard</Concepto>
+      <Concepto>Salida</Concepto>
+      <Concepto>Comida</Concepto>
+    </Conceptos>
+
+</Config>

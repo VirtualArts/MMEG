@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Logins>
+  
+<SIT>
+  <User>am80004</User>
+  <Password>Troya155$</Password>
+  <ProcessName>EBO</ProcessName>
+</SIT>
+  
+<UAT>
+  <User>ns71708</User>
+  <Password>Troya16$</Password>
+  <ProcessName>EBO</ProcessName>
+</UAT>
+  
+<PROD>
+ <User>ns71708</User>
+ <Password>Rokuko01</Password>
+ <ProcessName>EBO</ProcessName>
+</PROD>
+  
+</Logins>
