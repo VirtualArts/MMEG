@@ -2,13 +2,24 @@
 <Config>
 
   <Sistem>
-    
+    <LogTags>
+      <logTag1>[Error] </logTag1>
+      <logTag2>[Server] </logTag2>
+      <logTag3>[Info] </logTag3>
+      <logTag4>[SQL] </logTag4>
+      <logTag5>[SistemLog] </logTag5>
+      <logTag6>[Cryptography] </logTag6>
+      <logTag7>[CryptographycError] </logTag7>
+
+    </LogTags>
+    <ActionTags>
+      <ActionTag1></ActionTag1>
+      <ActionTag2></ActionTag2>
+      <ActionTag3></ActionTag3>
+    </ActionTags>
   </Sistem>
-    <logTag1>  </logTag1>
-    <logTag2>  </logTag2>
-    <logTag3>  </logTag3>
-    <logTag4>  </logTag4>
-  
+
+
   <Oracle>
     <host>latx24.nam.nsroot.net</host>
     <server_port>1521</server_port>
@@ -24,6 +35,7 @@
     <user_name>PRISM9</user_name>
     <password>PRISM9</password>
     <network_library></network_library>
+    <database_path></database_path>
   </SQL>
-  
+
 </Config>

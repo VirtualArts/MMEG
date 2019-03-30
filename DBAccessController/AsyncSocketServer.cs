@@ -11,11 +11,11 @@ namespace Controllers
 
     public class Client
     {
-        public int ID = 0;
-        public string IP = null;
-        public int Port;
-        public DateTime ConnectionTime;
-        public List<byte[]> DataSended = new List<byte[]>();
+        public int ID { get; set; } = 0;
+        public string IP { get; set; } = null;
+        public DateTime ConnectionTime { get; set; }
+        public byte[] DataSended { get; set; }
+        public int Port { get; set; }
 
         public Client(int id)
         {
@@ -25,7 +25,7 @@ namespace Controllers
 
     public class ClientsController
     {
-        List<Client> clientList = new List<Client>();
+        public List<Client> ClientList { get; set; } = new List<Client>();
 
         public ClientsController()
         {
@@ -36,7 +36,7 @@ namespace Controllers
         {
             try
             {
-                clientList.Add(client);
+                ClientList.Add(client);
                 return true;
             }
             catch (Exception)
@@ -49,7 +49,7 @@ namespace Controllers
         {
             try
             {
-                clientList.Remove(client);
+                ClientList.Remove(client);
                 return true;
             }
             catch
@@ -62,9 +62,7 @@ namespace Controllers
         {
             try
             {
-                string result = string.Empty;
-                for (int i = 0; i < clientList[client.ID].DataSended.Count; i++)
-                    result += Encoding.UTF8.GetString(clientList[client.ID].DataSended[i]) + '\n';
+                string result = Encoding.UTF8.GetString(ClientList[client.ID].DataSended) + '\n';
                 return result;
             }
             catch
@@ -75,7 +73,7 @@ namespace Controllers
 
         public int GetClientListCount()
         {
-            return clientList.Count;
+            return ClientList.Count;
         }
 
     }
@@ -95,15 +93,16 @@ namespace Controllers
 
     public class AsyncSocketServer
     {
-        public static ClientsController clientController = new ClientsController();
-        public static ManualResetEvent allDone = new ManualResetEvent(false);
-        public static int port = 2080;
-        public static string encryptPassword = "c3VzdGEyNTA=";
         private static byte[] buffer = new byte[0];
 
-        public AsyncSocketServer(int port = 2080)
+        public static ClientsController ClientController { get; set; } = new ClientsController();
+        public static ManualResetEvent AllDone { get; set; } = new ManualResetEvent(false);
+        public static int Port { get; set; } = 2080;
+
+
+        protected AsyncSocketServer(int port = 2080)
         {
-            AsyncSocketServer.port = port;
+            Port = port;
         }
 
         public static void StartListening()
@@ -113,7 +112,7 @@ namespace Controllers
             // running the listener is "host.contoso.com".  
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
+            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, Port);
 
             // Create a TCP/IP socket.  
             Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -124,19 +123,19 @@ namespace Controllers
                 listener.Bind(localEndPoint);
                 listener.Listen(100);
 
-                Sistem.printF(Sistem.GetLogTag(Sistem.EnumLogTags.SERVER) + "Async Socket Server  ONLINE at " + ipAddress.ToString() + ":" + port, ConsoleColor.Green);
+                Sistem.printF(Sistem.GetLogTag(Sistem.EnumLogTags.SERVER) + "Async Socket Server  ONLINE at " + ipAddress.ToString() + ":" + Port, ConsoleColor.Green);
 
                 while (true)
                 {
                     // Set the event to nonsignaled state.  
-                    allDone.Reset();
+                    AllDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
                     Sistem.printF(Sistem.GetLogTag(Sistem.EnumLogTags.SERVER) + "Waiting for a connection...", ConsoleColor.Gray);
                     listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
 
                     // Wait until a connection is made before continuing.  
-                    allDone.WaitOne();
+                    AllDone.WaitOne();
                 }
 
             }
@@ -151,7 +150,7 @@ namespace Controllers
         public static void AcceptCallback(IAsyncResult ar)
         {
             // Signal the main thread to continue.  
-            allDone.Set();
+            AllDone.Set();
 
             // Get the socket that handles the client request.  
             Socket listener = (Socket)ar.AsyncState;
@@ -161,14 +160,14 @@ namespace Controllers
             StateObject state = new StateObject();
             state.workSocket = handler;
 
-            Client client = new Client(clientController.GetClientListCount());
+            Client client = new Client(ClientController.GetClientListCount());
             client.ConnectionTime = DateTime.Now;
             client.IP = Convert.ToString(IPAddress.Parse(((IPEndPoint)state.workSocket.RemoteEndPoint).Address.ToString()));
             client.Port = ((IPEndPoint)state.workSocket.RemoteEndPoint).Port;
-            clientController.AddClient(client);
+            ClientController.AddClient(client);
 
             IPEndPoint clientEndPoint = (IPEndPoint)state.workSocket.RemoteEndPoint;
-            Console.WriteLine("Client Connected: {0}", clientEndPoint.Address.ToString());
+            Sistem.printF(string.Format("Client Connected: {0}", clientEndPoint.Address.ToString()), ConsoleColor.Green);
 
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
         }
@@ -213,9 +212,8 @@ namespace Controllers
                     else
                         Send(handler, new byte[0]);
                 }
-                else
+                else                    // Not all data received. Get more.  
                 {
-                    // Not all data received. Get more.  
                     handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                 }
             }
@@ -276,11 +274,18 @@ namespace Controllers
             return null;
         }
 
-
+        [STAThread]
         public static int Main(string[] args)
         {
-            StartListening();
-            return 0;
+            try
+            {
+                StartListening();
+                return 1;
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }
