@@ -10,18 +10,28 @@ namespace Controllers
 {
     public class Sistem
     {
-
-        private static StreamWriter sw;
-
-        private static string database_name;
-        private static string host;
-        private static string user_name;
-        private static string password;
-        private static string network_library;
-        private static int server_port;
         private static List<string> files;
+        private static StreamWriter swErrorWriter;
+        private readonly string xmlPath = Directory.GetCurrentDirectory() + @"\XMLS\Config.xml";
 
-        private bool configLoaded = false;
+        public static Sistem Instance { get; } = new Sistem();
+        public static string OraHost { get; set; }
+        public static string OraPort { get; set; }
+        public static string OraUser { get; set; }
+        public static string OraPassword { get; set; }
+        public static string OraDatabase { get; set; }
+        public static string OraServicename { get; set; }
+        public static string SqlHost { get; set; }
+        public static string SqlPort { get; set; }
+        public static string SqlUser { get; set; }
+        public static string SqlPassword { get; set; }
+        public static string SqlDatabase { get; set; }
+        public static string SqlNetworkLibrary { get; set; }
+        public static string SqlLocalDatabaseNamePath { get; set; }
+        public static string EncryptPassword { get; set; } = "c3VzdGEyNTA=";
+        public static bool LoadConfigFlag { get; set; } = false;
+        public static string[] ActionTags { get; set; } = { "<File.", "<SQLMS", "SQLPL" };
+        public static string[] LogTags { get; set; } = { "[Error] ", "[Server] ", "[Info] ", "[SQL] ", "[PL/SQL] ", "[SistemLog] ", "[Cryptography] ", "[CryptographycError] " };
 
         public enum EnumEstados
         {
@@ -30,7 +40,6 @@ namespace Controllers
             MODIFICACION = 2,
             BAJA = 3
         }
-
         public enum EnumLogTags
         {
             ERROR = 0,
@@ -44,27 +53,31 @@ namespace Controllers
             CRYPTOGRAPHY = 6,
             CRYPTOGRAPHYCERROR = 7
         }
-
         public enum EnumActionTags
         {
             FILE = 0,
             SQLMS = 1,
             SQLPL = 2
-
         }
-
-        private static string[] LogTags = { "[Error] ", "[Server] ", "[Info] ", "[SQL] ", "[PL/SQL] ", "[SistemLog] ", "[Cryptography] ", "[CryptographycError] " };
-
-        private static string[] actionTags = { "<File.", "<SQLMS", "SQLPL"};
+        public enum enuConfig
+        {
+            Config = 0,
+            Oracle = 1,
+            SQL = 2,
+            host = 3,
+            server_port = 4,
+            service_name = 5,
+            user_name = 6,
+            password = 7,
+            database_name = 8,
+            network_library = 9
+        }
 
         public Sistem()
         {
-            string fileName = Directory.GetCurrentDirectory() + @"\Error " + DateTime.Now.ToShortDateString().Replace("/", "-") + ".log";
-            if (!File.Exists(fileName))
-                File.Create(fileName);
             try
             {
-                sw = new StreamWriter(fileName);
+                LoadConfigFlag = LoadConfigs();
             }
             catch (IOException ex)
             {
@@ -76,44 +89,196 @@ namespace Controllers
             }
         }
 
+        private bool CheckConfigProperties()
+        {
+            bool sqlresult = true;
+            bool oraresult = true;
+
+            try
+            {
+                if ((string.IsNullOrEmpty(SqlHost) || string.IsNullOrEmpty(SqlDatabase) || string.IsNullOrEmpty(SqlUser) || string.IsNullOrEmpty(SqlPassword)))
+                    sqlresult = false;
+                if ((string.IsNullOrEmpty(OraHost) || string.IsNullOrEmpty(OraServicename) || string.IsNullOrEmpty(OraPassword) || string.IsNullOrEmpty(OraUser)))
+                    oraresult = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            return (sqlresult || oraresult);
+        }
+
         private bool LoadConfigs()
         {
             try
             {
-                string configFilePath = Directory.GetCurrentDirectory() + @"\XMLS\Config.xml";
+                string fileName = Directory.GetCurrentDirectory() + @"\Error " + DateTime.Now.ToShortDateString().Replace("/", "-") + ".log";
+                if (!File.Exists(fileName))
+                    File.Create(fileName);
+                swErrorWriter = new StreamWriter(fileName);
+
+                string configFilePath = xmlPath;
                 if (File.Exists(configFilePath))
                 {
                     XmlDocument xmlConfig = new XmlDocument();
                     xmlConfig.Load(configFilePath);
                     foreach (XmlNode tag in xmlConfig.ChildNodes)
                     {
-                        foreach (XmlNode item in tag.ChildNodes)
+                        if (tag.Name == enuConfig.Config.ToString())
                         {
-                            if (item.InnerText == "Sistem")
+                            foreach (XmlNode item in tag.ChildNodes)
                             {
-                                foreach (XmlNode item2 in item.ChildNodes)
+                                if (item.InnerText == "Sistem")
                                 {
-
+                                    foreach (XmlNode item2 in item.ChildNodes)
+                                    {
+                                        int tagCount;
+                                        if (item2.InnerText == "LogTags")
+                                        {
+                                            tagCount = 0;
+                                            LogTags = new string[item2.ChildNodes.Count];
+                                            foreach (XmlNode item3 in item2.ChildNodes)
+                                            {
+                                                LogTags[tagCount] = item3.InnerText;
+                                                tagCount++;
+                                            }
+                                        }
+                                        if (item2.InnerText == "ActionTags")
+                                        {
+                                            tagCount = 0;
+                                            ActionTags = new string[item2.ChildNodes.Count];
+                                            foreach (XmlNode item3 in item2.ChildNodes)
+                                            {
+                                                ActionTags[tagCount] = item3.InnerText;
+                                                tagCount++;
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (item.Name == enuConfig.Oracle.ToString())
+                                {
+                                    //ORACLE ENVIROMENT
+                                    foreach (XmlNode childnode2 in item.ChildNodes)
+                                    {
+                                        switch (childnode2.Name)
+                                        {
+                                            case "host":
+                                                OraHost = childnode2.InnerText;
+                                                break;
+                                            case "server_port":
+                                                OraPort = childnode2.InnerText;
+                                                break;
+                                            case "service_name":
+                                                OraServicename = childnode2.InnerText;
+                                                break;
+                                            case "user_name":
+                                                OraUser = childnode2.InnerText;
+                                                break;
+                                            case "password":
+                                                if (!string.IsNullOrEmpty(childnode2.InnerText))
+                                                    OraPassword = SecurityController.RSADecryption(childnode2.InnerText);
+                                                else
+                                                    OraPassword = string.Empty;
+                                                break;
+                                        }
+                                    }
+                                }
+                                else if (item.Name == enuConfig.SQL.ToString())
+                                {
+                                    //SQL ENVIROMENT
+                                    foreach (XmlNode childnode2 in item.ChildNodes)
+                                    {
+                                        switch (childnode2.Name)
+                                        {
+                                            case "network_library":
+                                                SqlNetworkLibrary = childnode2.InnerText;
+                                                break;
+                                            case "host":
+                                                SqlHost = childnode2.InnerText;
+                                                break;
+                                            case "server_port":
+                                                SqlPort = childnode2.InnerText;
+                                                break;
+                                            case "database_name":
+                                                SqlDatabase = childnode2.InnerText;
+                                                break;
+                                            case "user_name":
+                                                SqlUser = childnode2.InnerText;
+                                                break;
+                                            case "password":
+                                                SqlPassword = childnode2.InnerText;
+                                                break;
+                                            case "database_path":
+                                                if (File.Exists(childnode2.InnerText))
+                                                    SqlLocalDatabaseNamePath = childnode2.InnerText;
+                                                else
+                                                    WriteLog("The specified path for the local sql database does not exists.", "LoadConfigs()", true, false, true, ConsoleColor.Red);
+                                                break;
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    return true;
                 }
                 else
-                    return false;
-               
+                {
+                    // CREATE XML CONFIG FILE
+                    StreamWriter sw = new StreamWriter(xmlPath);
+                    sw.WriteLine("<?xml version=" + '"' + "1.0" + '"' + "encoding =" + '"' + "utf - 8" + '"' + "?> ");
+                    sw.WriteLine("<Config>");
+                    sw.WriteLine("");
+                    sw.WriteLine("  <Sistem>                                    ");
+                    sw.WriteLine("    <LogTags>                                 ");
+                    sw.WriteLine("      <logTag1>[Error] </logTag1>             ");
+                    sw.WriteLine("      <logTag2>[Server] </logTag2>            ");
+                    sw.WriteLine("      <logTag3>[Info] </logTag3>              ");
+                    sw.WriteLine("      <logTag4>[SQL] </logTag4>               ");
+                    sw.WriteLine("      <logTag5>[SistemLog] </logTag5>         ");
+                    sw.WriteLine("      <logTag6>[Cryptography] </logTag6>      ");
+                    sw.WriteLine("      <logTag7>[CryptographycError] </logTag7>");
+                    sw.WriteLine("    </LogTags>                                ");
+                    sw.WriteLine("    <ActionTags>                              ");
+                    sw.WriteLine("      <ActionTag1></ActionTag1>               ");
+                    sw.WriteLine("      <ActionTag2></ActionTag2>               ");
+                    sw.WriteLine("      <ActionTag3></ActionTag3>               ");
+                    sw.WriteLine("    </ActionTags>                             ");
+                    sw.WriteLine("  </Sistem>                                   ");
+                    sw.WriteLine("");
+                    sw.WriteLine("  <Oracle>");
+                    sw.WriteLine("    <host></host>");
+                    sw.WriteLine("    <server_port></server_port>");
+                    sw.WriteLine("    <service_name></service_name>");
+                    sw.WriteLine("    <user_name></user_name>");
+                    sw.WriteLine("    <password></password>");
+                    sw.WriteLine("  </Oracle>");
+                    sw.WriteLine("");
+                    sw.WriteLine("  <SQL>");
+                    sw.WriteLine("    <host>latx24.nam.nsroot.net</host>");
+                    sw.WriteLine("    <server_port>1433</server_port>");
+                    sw.WriteLine("    <database_name>SIT11G</database_name>");
+                    sw.WriteLine("    <user_name>PRISM9</user_name>");
+                    sw.WriteLine("    <password>PRISM9</password>");
+                    sw.WriteLine("    <network_library></network_library>");
+                    sw.WriteLine("  </SQL>");
+                    sw.WriteLine("");
+                    sw.WriteLine("</Config>");
+                    sw.Close();
+                }
+                return CheckConfigProperties();
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                MessageBox.Show(ex.Message);
+                return false;
             }
         }
+
         public static string[] getFilesRecursive(string initialPath)
         {
+            files = new List<string>();
             if (Directory.Exists(initialPath))
             {
-                files = new List<string>();
                 foreach (var item in Directory.GetFiles(initialPath))
                 {
                     files.Add(item);
@@ -123,9 +288,6 @@ namespace Controllers
                     getFilesRecursive(item);
                 }
             }
-            else
-                return null;
-
             return files.ToArray();
         }
 
@@ -149,8 +311,8 @@ namespace Controllers
             try
             {
                 string data = GetLogTag(EnumLogTags.SISTEMLOG) + DateTime.Now + "  Message: " + msg + " " + methodConstructor;
-                if (sw != null)
-                    sw.WriteLine(data);
+                if (swErrorWriter != null)
+                    swErrorWriter.WriteLine(data);
                 result = true;
 
                 if (PrintF)
@@ -182,8 +344,8 @@ namespace Controllers
                 string data = "[" + DateTime.Now + "]Message: " + methodConstructor + " " + msg.Message + "\t";
                 data += "Inner Exception: " + msg.InnerException + "\t";
                 data += "StackTrace: " + msg.StackTrace + "\n";
-                if (sw != null)
-                    sw.WriteLine(data);
+                if (swErrorWriter != null)
+                    swErrorWriter.WriteLine(data);
 
                 result = true;
 
@@ -211,7 +373,7 @@ namespace Controllers
         {
             try
             {
-                sw.Close();
+                swErrorWriter.Close();
                 return true;
             }
             catch (Exception ex)
@@ -258,8 +420,8 @@ namespace Controllers
 
         public static string GetActionTag(int actionTagsPosition)
         {
-            if (actionTagsPosition < actionTags.Length)
-                return actionTags[actionTagsPosition];
+            if (actionTagsPosition < ActionTags.Length)
+                return ActionTags[actionTagsPosition];
             else
                 return string.Empty;
         }

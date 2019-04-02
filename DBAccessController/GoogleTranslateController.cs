@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Google.Cloud.Translation.V2;
+using Google.Apis.Auth.OAuth2;
+using System.IO;
 
 namespace Controllers
 {
-    class GoogleTranslateController
+    public static class GoogleTranslateController
     {
         public static string Translate(string text, string toLanguaje, string sourceLanguaje = "")
         {
@@ -15,14 +13,14 @@ namespace Controllers
             try
             {
                 Console.OutputEncoding = System.Text.Encoding.Unicode;
-                TranslationClient client = TranslationClient.Create();
-                // var response = client.TranslateText("Hello World.", "ru");
+                GoogleCredential credential = GoogleCredential.FromFile(Directory.GetCurrentDirectory() + @"\GoogleTranslateCredentials.json");
+                TranslationClient client = TranslationClient.Create(credential);
                 var response = client.TranslateText(text, toLanguaje, sourceLanguaje);
                 result = response.TranslatedText;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Sistem.WriteLog(ex, "GoogleTranslateController.Translate(string text, string toLanguaje, string sourceLanguaje)");
             }
             return result;
         }

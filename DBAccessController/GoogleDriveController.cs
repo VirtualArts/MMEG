@@ -14,17 +14,17 @@ using System.Threading.Tasks;
 
 namespace Controllers
 {
-    public class GoogleDriveController
+    public static class GoogleDriveController
     {
         // If modifying these scopes, delete your previously saved credentials
         // at ~/.credentials/drive-dotnet-quickstart.json
         static string[] Scopes = { DriveService.Scope.DriveReadonly };
-        static string ApplicationName = "Drive API .NET";
         static UserCredential credential;
         static DriveService drive;
-        static Thread thGetFiles;
         static List<Google.Apis.Drive.v3.Data.File> listFiles = new List<Google.Apis.Drive.v3.Data.File>();
         static List<string> listStringFiles = new List<string>();
+
+        [STAThread]
         public static void Main(string[] args)
         {
             using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
@@ -46,34 +46,20 @@ namespace Controllers
 
         public static bool UploadFile(string filePath)
         {
+            bool result = false;
             try
             {
                 if (System.IO.File.Exists(filePath))
                 {
-                    var fileMetadata = new Google.Apis.Drive.v3.Data.File()
-                    {
-                        Name = "photo.jpg"
-                    };
-                    FilesResource.CreateMediaUpload request;
-                    using (var stream = new FileStream("files/photo.jpg", FileMode.Open))
-                    {
-                        //request = driveService.Files.Create(fileMetadata, stream, "image/jpeg");
-                        //request.Fields = "id";
-                      //  request.Upload();
-                        stream.Close();
-                        stream.Dispose();
-                    }
-                   // var file = request.ResponseBody;
-                  //  Console.WriteLine("File ID: " + file.Id);
-                    return true;
+
+                    result = true;
                 }
-                else
-                    return false;
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                Sistem.WriteLog(ex, "GoogleDriveController.UploadFile(string filePath)");
             }
+            return result;
         }
 
         private static string GetDriveObjectParentPath(DriveService drive, string objectId, bool digging = false)
@@ -106,7 +92,7 @@ namespace Controllers
             request.PageSize = 1000;
             request.Fields = "nextPageToken, files(mimeType, id, name, parents)";
 
-            //List first 10 files
+            //List first 1000 files
             IList<Google.Apis.Drive.v3.Data.File> files = request.Execute().Files;
             if (files != null && files.Count > 0)
             {
@@ -115,11 +101,6 @@ namespace Controllers
                     string parentPath = GetDriveObjectParentPath(drive, file.Id);
                     listFiles.Add(file);
                     listStringFiles.Add(parentPath + file.Name + '\n' + " File Id: " + file.Id);
-                   
-                    //Console.Write(parentPath + file.Name);
-                    //Console.ForegroundColor = ConsoleColor.DarkGray;
-                    //Console.WriteLine(" File Id: " + file.Id);
-                    //Console.ForegroundColor = ConsoleColor.White;
                 }
             }
             else
