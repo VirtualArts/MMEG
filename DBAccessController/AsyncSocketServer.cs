@@ -256,7 +256,7 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-
+                Sistem.WriteLog(ex, "AsyncSocketServer.InterpretData(byte[] encryptedData)");
             }
             return result;
         }

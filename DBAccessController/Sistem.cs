@@ -11,7 +11,7 @@ namespace Controllers
     public class Sistem
     {
         private static List<string> files;
-        private static StreamWriter sw;
+        private static StreamWriter swErrorWriter;
         private readonly string xmlPath = Directory.GetCurrentDirectory() + @"\XMLS\Config.xml";
 
         public static Sistem Instance { get; } = new Sistem();
@@ -75,12 +75,8 @@ namespace Controllers
 
         public Sistem()
         {
-            string fileName = Directory.GetCurrentDirectory() + @"\Error " + DateTime.Now.ToShortDateString().Replace("/", "-") + ".log";
-            if (!File.Exists(fileName))
-                File.Create(fileName);
             try
             {
-                sw = new StreamWriter(fileName);
                 LoadConfigFlag = LoadConfigs();
             }
             catch (IOException ex)
@@ -107,16 +103,20 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                MessageBox.Show(ex.Message);
             }
             return (sqlresult || oraresult);
         }
-
 
         private bool LoadConfigs()
         {
             try
             {
+                string fileName = Directory.GetCurrentDirectory() + @"\Error " + DateTime.Now.ToShortDateString().Replace("/", "-") + ".log";
+                if (!File.Exists(fileName))
+                    File.Create(fileName);
+                swErrorWriter = new StreamWriter(fileName);
+
                 string configFilePath = xmlPath;
                 if (File.Exists(configFilePath))
                 {
@@ -269,15 +269,16 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                MessageBox.Show(ex.Message);
+                return false;
             }
         }
 
         public static string[] getFilesRecursive(string initialPath)
         {
+            files = new List<string>();
             if (Directory.Exists(initialPath))
             {
-                files = new List<string>();
                 foreach (var item in Directory.GetFiles(initialPath))
                 {
                     files.Add(item);
@@ -287,9 +288,6 @@ namespace Controllers
                     getFilesRecursive(item);
                 }
             }
-            else
-                return null;
-
             return files.ToArray();
         }
 
@@ -313,8 +311,8 @@ namespace Controllers
             try
             {
                 string data = GetLogTag(EnumLogTags.SISTEMLOG) + DateTime.Now + "  Message: " + msg + " " + methodConstructor;
-                if (sw != null)
-                    sw.WriteLine(data);
+                if (swErrorWriter != null)
+                    swErrorWriter.WriteLine(data);
                 result = true;
 
                 if (PrintF)
@@ -346,8 +344,8 @@ namespace Controllers
                 string data = "[" + DateTime.Now + "]Message: " + methodConstructor + " " + msg.Message + "\t";
                 data += "Inner Exception: " + msg.InnerException + "\t";
                 data += "StackTrace: " + msg.StackTrace + "\n";
-                if (sw != null)
-                    sw.WriteLine(data);
+                if (swErrorWriter != null)
+                    swErrorWriter.WriteLine(data);
 
                 result = true;
 
@@ -375,7 +373,7 @@ namespace Controllers
         {
             try
             {
-                sw.Close();
+                swErrorWriter.Close();
                 return true;
             }
             catch (Exception ex)

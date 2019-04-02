@@ -7,8 +7,8 @@ namespace Controllers
 {
     public class DBAccessController
     {
-        static OracleConnection oraConnection = null;
-        static SqlConnection sqlConnnection = null;
+        static OracleConnection oraConnection = dbGetOracleConnection();
+        static SqlConnection sqlConnnection = dbGetSqlConnection();
         static DataTable dataTable = null;
 
         static string[] oraConnectionString;
@@ -19,8 +19,6 @@ namespace Controllers
             if (Sistem.LoadConfigFlag)
             {
                 createConnectionStrings();
-                oraConnection = dbGetOracleConnection();
-                sqlConnnection = dbGetSqlConnection();
             }
             else
                 Sistem.WriteLog("Debe completar el archivo de configuracion Config.xml antes de iniciar el sistema.", "DBAccessController()", true, true);
@@ -76,9 +74,8 @@ namespace Controllers
 
         public static OracleConnection dbGetOracleConnection()
         {
-            if (oraConnection != null)
-                if (oraConnection.State == System.Data.ConnectionState.Open)
-                    return oraConnection;
+            if (oraConnection != null && oraConnection.State == System.Data.ConnectionState.Open)
+                return oraConnection;
 
             if (Sistem.LoadConfigFlag)
             {
@@ -105,9 +102,8 @@ namespace Controllers
 
         public static OracleConnection dbGetOracleConnection(string connectionString)
         {
-            if (oraConnection != null)
-                if (oraConnection.State == System.Data.ConnectionState.Open)
-                    return oraConnection;
+            if (oraConnection != null && oraConnection.State == System.Data.ConnectionState.Open)
+                return oraConnection;
 
             oraConnection = new OracleConnection(connectionString);
             try
@@ -136,7 +132,8 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                Sistem.WriteLog(ex, "DBAccessController.ExecuteSQLCommand()");
+                return false;
             }
         }
 
@@ -155,7 +152,8 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                Sistem.WriteLog(ex, "DBAccessController.ExecuteOracleCommand()");
+                return false;
             }
         }
     }
